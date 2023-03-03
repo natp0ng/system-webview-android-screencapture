@@ -2,9 +2,7 @@ package io.screencloud.system_webview
 
 import android.annotation.SuppressLint
 import android.content.pm.ApplicationInfo
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
+import android.graphics.*
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -20,7 +18,7 @@ import java.io.FileOutputStream
 
 class MainActivity : AppCompatActivity() {
     private lateinit var mWebView: WebView
-    private val defaultURL = "http://example.com"
+    private val defaultURL = "http://player.screen.cloud/browser/index.html"
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -86,6 +84,21 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    fun screenShot2(): Bitmap {
+        mWebView.isDrawingCacheEnabled = true
+        mWebView.buildDrawingCache()
+        val snapShot = mWebView.capturePicture()
+        val bitmap = Bitmap.createBitmap(snapShot.width, snapShot.height, Bitmap.Config.ARGB_8888)
+        //bitmap.eraseColor(Color.WHITE);
+        val c = Canvas(bitmap)
+        val state = c.save()
+        mWebView.draw(c)
+        //c.restoreToCount(state);
+        c.restore()
+        mWebView.destroyDrawingCache()
+        return bitmap
+    }
+
     fun screenShot(): Bitmap {
         val view = window.decorView.rootView
         val bitmap = Bitmap.createBitmap(
@@ -116,14 +129,36 @@ class MainActivity : AppCompatActivity() {
                 // {"url":"http://foo.bar", "headers":[["hello","world"],["foo","bar"]]}
                 // JSInterface.screenShot('{"url":"http://192.168.100.116:3000/upload", "headers":[["hello","world"],["foo","bar"]]}')
                 val params = jsonAdapter.fromJson(jsonParamsForUpload)!!
-                val bm = act.screenShot()
+                val bitmap = act.screenShot()
+
+//                val bitmap = act.screenShot2()
+//                // Get the location and dimensions of the video within the WebView
+//                val locationOnScreen = IntArray(2)
+//                act.mWebView.getLocationOnScreen(locationOnScreen)
+//                val videoRect = Rect()
+//                act.mWebView.getGlobalVisibleRect(videoRect)
+//
+//                // Crop the Bitmap to the area where the video is displayed
+//                val videoX: Int = videoRect.left - locationOnScreen[0]
+//                val videoY: Int = videoRect.top - locationOnScreen[1]
+//                val videoWidth: Int = videoRect.width()
+//                val videoHeight: Int = videoRect.height()
+//                val videoBitmap: Bitmap = Bitmap.createBitmap(
+//                    bitmap,
+//                    videoX,
+//                    videoY,
+//                    videoWidth,
+//                    videoHeight
+//                )
+
                 val file = File.createTempFile("screenshot", null, act.cacheDir)
                 FileOutputStream(file).use { fos ->
-                    bm.compress(
+                    bitmap.compress(
                         Bitmap.CompressFormat.PNG,
                         100,
                         fos
                     )
+//                    videoBitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
                 }
                 UploadUtil.uploadFile(params, file, "image/png")
 
